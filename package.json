@@ -1,0 +1,10 @@
+{
+  "name": "omarchy-alienware-battery",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Battery indicator for the Omarchy bar with Alienware thermal profiles",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

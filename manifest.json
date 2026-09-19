@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "xyzlab.alienware-battery",
+  "name": "Alienware Battery",
+  "version": "0.1.0",
+  "author": "xyzlab",
+  "license": "MIT",
+  "description": "A battery indicator for the Omarchy bar without the power-profiles picker, so it does not fight Alienware thermal profiles. Shows charge, rate, time left, size and cycles, and switches thermal profiles through alienwarectl when it is installed.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Alienware Battery",
+    "description": "Battery charge and time left, with Alienware thermal profiles instead of power profiles.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showPercentage": false,
+      "lowBattery": 15,
+      "showProfiles": true
+    },
+    "schema": [
+      {
+        "key": "showPercentage",
+        "type": "boolean",
+        "label": "Show the charge percentage beside the icon",
+        "defaultValue": false
+      },
+      {
+        "key": "lowBattery",
+        "type": "integer",
+        "label": "Charge that turns the icon urgent on battery (%)",
+        "min": 5,
+        "max": 50,
+        "step": 1,
+        "defaultValue": 15
+      },
+      {
+        "key": "showProfiles",
+        "type": "boolean",
+        "label": "Show Alienware thermal profiles when alienwarectl is installed",
+        "defaultValue": true
+      }
+    ]
+  }
+}
