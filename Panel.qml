@@ -21,6 +21,7 @@ Panel {
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.4)
   readonly property color urgentColor: bar ? bar.urgent : Color.urgent
+  readonly property color accent: Color.accent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
   readonly property var w: hostWidget
@@ -112,7 +113,7 @@ Panel {
     bar: root.bar
     open: root.opened && root.device.isPresent === true
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(380))
+    contentWidth: panel.fittedContentWidth(Style.space(460))
     contentHeight: panel.fittedContentHeight(column.implicitHeight)
 
     PanelKeyCatcher {
@@ -196,64 +197,84 @@ Panel {
           }
         }
 
-        Item {
-          width: parent.width
-          implicitHeight: Style.space(8)
 
-          Rectangle {
-            id: track
-            anchors.fill: parent
-            radius: height / 2
-            color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.12)
+        Card {
+          CardTitle {
+            title: "CHARGE"
+            detail: Model.phaseLabel(root.phase)
+            detailColor: root.low ? root.urgentColor : root.dim
           }
 
-          Rectangle {
-            anchors.left: track.left
-            anchors.verticalCenter: track.verticalCenter
-            height: track.height
-            radius: track.radius
-            color: root.low ? root.urgentColor : root.fg
-            width: Math.max(track.height, track.width * root.fraction)
-            Behavior on width { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+          Item {
+            width: parent.width
+            implicitHeight: Style.space(10)
 
-            SequentialAnimation on opacity {
-              running: root.phase === "charging" && root.opened
-              loops: Animation.Infinite
-              alwaysRunToEnd: true
-              NumberAnimation { from: 1.0; to: 0.55; duration: 950; easing.type: Easing.InOutSine }
-              NumberAnimation { from: 0.55; to: 1.0; duration: 950; easing.type: Easing.InOutSine }
+            Rectangle {
+              id: track
+              anchors.fill: parent
+              radius: height / 2
+              color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.12)
+            }
+
+            Rectangle {
+              anchors.left: track.left
+              anchors.verticalCenter: track.verticalCenter
+              height: track.height
+              radius: track.radius
+              color: root.low ? root.urgentColor : root.fg
+              width: Math.max(track.height, track.width * root.fraction)
+              Behavior on width { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+
+              SequentialAnimation on opacity {
+                running: root.phase === "charging" && root.opened
+                loops: Animation.Infinite
+                alwaysRunToEnd: true
+                NumberAnimation { from: 1.0; to: 0.55; duration: 950; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 0.55; to: 1.0; duration: 950; easing.type: Easing.InOutSine }
+              }
+            }
+
+            Rectangle {
+              // Where the lowBattery warning starts, so the bar reads against it.
+              visible: root.w !== null
+              x: track.width * (root.w ? root.w.lowBattery : 15) / 100 - width / 2
+              anchors.verticalCenter: track.verticalCenter
+              width: 2
+              height: track.height + Style.space(4)
+              radius: 1
+              color: root.urgentColor
+              opacity: 0.6
             }
           }
 
-          Rectangle {
-            // Where the lowBattery warning starts, so the bar reads against it.
-            visible: root.w !== null
-            x: track.width * (root.w ? root.w.lowBattery : 15) / 100 - width / 2
-            anchors.verticalCenter: track.verticalCenter
-            width: 2
-            height: track.height + Style.space(4)
-            radius: 1
-            color: root.urgentColor
-            opacity: 0.6
+          Text {
+            width: parent.width
+            textFormat: Text.PlainText
+            text: "Warns at " + (root.w ? root.w.lowBattery : 15) + "% on battery"
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
           }
         }
 
         Grid {
+          id: statGrid
           width: parent.width
-          columns: 2
-          columnSpacing: Style.space(20)
-          rowSpacing: Style.spacing.labelGap
+          columns: 4
+          columnSpacing: Style.space(8)
+          rowSpacing: Style.space(8)
+          readonly property real cell: (width - columnSpacing * (columns - 1)) / columns
 
-          readonly property real cell: (width - columnSpacing) / 2
-
-          InfoPair {
-            width: parent.cell
-            label: root.phase === "charging" ? "Charging at" : "Draw"
+          StatTile {
+            width: statGrid.cell
+            icon: root.phase === "charging" ? "󰚥" : "󱐋"
+            label: root.phase === "charging" ? "Charging" : "Draw"
             value: root.flowing ? (Model.formatRate(root.device.changeRate) || root.info.rate || "-") : "-"
           }
-          InfoPair {
-            width: parent.cell
-            label: root.phase === "holding" ? "Charge limit" : (root.onBattery ? "Time left" : "Time to full")
+          StatTile {
+            width: statGrid.cell
+            icon: "󰔟"
+            label: root.phase === "holding" ? "Limit" : (root.onBattery ? "Left" : "To full")
             value: {
               if (root.phase === "holding") return root.info.threshold || "-"
               if (!root.flowing) return "-"
@@ -261,47 +282,89 @@ Panel {
               return t || root.info.time || "-"
             }
           }
-          InfoPair { width: parent.cell; label: "Battery size"; value: root.info.size || "-" }
-          InfoPair { width: parent.cell; label: "Charge cycles"; value: root.info.cycles || "-" }
+          StatTile {
+            width: statGrid.cell
+            icon: "󰁹"
+            label: "Size"
+            value: root.info.size || "-"
+          }
+          StatTile {
+            width: statGrid.cell
+            icon: "󰑓"
+            label: "Cycles"
+            value: root.info.cycles || "-"
+          }
         }
 
-        PanelSeparator {
+        Card {
           visible: root.profilesShown
-          foreground: root.fg
-        }
 
-        Column {
-          visible: root.profilesShown
-          width: parent.width
-          spacing: Style.space(10)
-
-          PanelSectionHeader {
-            text: "THERMAL PROFILE"
-            foreground: root.fg
-            fontFamily: root.fontFamily
+          CardTitle {
+            title: "THERMAL MODE"
+            detail: root.profile.current ? Model.profileLabel(root.profile.current, root.profile.gmodeForced) : ""
           }
 
-          Flow {
+          Row {
+            id: modeRow
             width: parent.width
             spacing: Style.space(4)
+            readonly property real cell: root.profiles.length ? (width - spacing * (root.profiles.length - 1)) / root.profiles.length : width
 
             Repeater {
               model: root.profiles
 
-              Button {
+              Rectangle {
+                id: modeTile
                 required property var modelData
                 required property int index
-                text: Model.profileLabel(modelData, root.profile.gmodeForced)
-                iconText: Model.profileGlyph(modelData)
-                selected: root.profile.current === modelData
-                hasCursor: root.profileCursor === index
-                enabled: root.profile.writable
-                bordered: true
-                foreground: root.fg
-                fontFamily: root.fontFamily
-                fontSize: Style.font.caption
-                onClicked: if (root.w) root.w.setProfile(modelData)
-                onHovered: function(h) { if (h) root.profileCursor = index }
+                readonly property bool current: root.profile.current === modelData
+                readonly property bool usable: root.profile.writable
+                width: modeRow.cell
+                height: modeCol.implicitHeight + Style.space(14)
+                radius: Math.max(Style.cornerRadius, Style.space(3))
+                color: current ? Util.alpha(root.accent, 0.22) : ((modeMouse.containsMouse || root.profileCursor === index) && usable ? Style.hoverFillFor(root.fg, root.accent) : "transparent")
+                border.width: current ? Math.max(2, Style.normalBorderWidth * 2) : Style.normalBorderWidth
+                border.color: current ? root.accent : (root.profileCursor === index ? root.fg : Util.alpha(root.fg, 0.18))
+                opacity: usable ? 1.0 : 0.5
+                Behavior on color { ColorAnimation { duration: 140 } }
+
+                Column {
+                  id: modeCol
+                  anchors.centerIn: parent
+                  width: parent.width - Style.space(6)
+                  spacing: Style.space(3)
+
+                  Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText
+                    text: Model.profileGlyph(modeTile.modelData)
+                    color: modeTile.current ? root.accent : root.fg
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.title
+                  }
+
+                  Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText
+                    text: Model.profileLabel(modeTile.modelData, root.profile.gmodeForced)
+                    color: modeTile.current ? root.fg : root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: modeTile.current
+                    elide: Text.ElideRight
+                  }
+                }
+
+                MouseArea {
+                  id: modeMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  enabled: modeTile.usable
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: if (root.w) root.w.setProfile(modeTile.modelData)
+                }
               }
             }
           }
@@ -320,31 +383,92 @@ Panel {
     }
   }
 
-  component InfoPair: Row {
-    property string label: ""
-    property string value: ""
+  component Card: Rectangle {
+    id: card
+    default property alias content: cardBody.data
+    width: parent ? parent.width : 0
+    implicitHeight: cardBody.implicitHeight + Style.space(24)
+    radius: Math.max(Style.cornerRadius, Style.space(4))
+    color: Style.normalFillFor(root.fg, root.accent)
+    border.color: Util.alpha(root.fg, 0.15)
+    border.width: Style.normalBorderWidth
+
+    Column {
+      id: cardBody
+      x: Style.space(12)
+      y: Style.space(12)
+      width: card.width - Style.space(24)
+      spacing: Style.space(10)
+    }
+  }
+
+  component CardTitle: Row {
+    id: ct
+    property string title: ""
+    property string detail: ""
+    property color detailColor: root.dim
     spacing: Style.space(8)
 
     Text {
-      id: labelText
       textFormat: Text.PlainText
-      text: parent.label
+      text: ct.title
       color: root.fg
-      opacity: 0.6
       font.family: root.fontFamily
-      font.pixelSize: Style.font.bodySmall
+      font.pixelSize: Style.font.caption
+      font.bold: true
+      font.letterSpacing: 1.4
     }
-    Item {
-      width: Math.max(0, parent.width - labelText.implicitWidth - valueText.implicitWidth - parent.spacing * 2)
-      height: 1
-    }
+
     Text {
-      id: valueText
+      visible: ct.detail !== ""
       textFormat: Text.PlainText
-      text: parent.value
-      color: root.fg
+      text: "· " + ct.detail
+      color: ct.detailColor
       font.family: root.fontFamily
-      font.pixelSize: Style.font.bodySmall
+      font.pixelSize: Style.font.caption
+    }
+  }
+
+  component StatTile: Rectangle {
+    id: tile
+    property string icon: ""
+    property string label: ""
+    property string value: ""
+    implicitHeight: tileCol.implicitHeight + Style.space(20)
+    radius: Math.max(Style.cornerRadius, Style.space(4))
+    color: Style.normalFillFor(root.fg, root.accent)
+    border.color: Util.alpha(root.fg, 0.15)
+    border.width: Style.normalBorderWidth
+
+    Column {
+      id: tileCol
+      x: Style.space(10)
+      y: Style.space(10)
+      width: tile.width - Style.space(20)
+      spacing: Style.space(4)
+
+      Text {
+        width: parent.width
+        textFormat: Text.PlainText
+        text: tile.icon + "  " + tile.label.toUpperCase()
+        color: root.dim
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        font.bold: true
+        font.letterSpacing: 1.1
+        elide: Text.ElideRight
+      }
+
+      Text {
+        width: parent.width
+        textFormat: Text.PlainText
+        text: tile.value
+        color: root.fg
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.title
+        font.bold: true
+        elide: Text.ElideRight
+      }
     }
   }
 }

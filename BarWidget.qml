@@ -171,6 +171,16 @@ BarWidget {
       verticalItemAlignment: Grid.AlignVCenter
 
       Text {
+        textFormat: Text.PlainText
+        text: root.glyph
+        color: root.glyphColor
+        font.family: button.fontFamily
+        font.pixelSize: Style.bar.iconFont
+        renderType: Text.NativeRendering
+        Behavior on color { ColorAnimation { duration: 160 } }
+      }
+
+      Text {
         visible: button.textVisible
         textFormat: Text.PlainText
         text: root.vertical ? root.percentText.replace("%", "") : root.percentText
@@ -178,16 +188,6 @@ BarWidget {
         font.family: button.fontFamily
         font.pixelSize: Style.font.caption
         font.bold: root.low
-        renderType: Text.NativeRendering
-        Behavior on color { ColorAnimation { duration: 160 } }
-      }
-
-      Text {
-        textFormat: Text.PlainText
-        text: root.glyph
-        color: root.glyphColor
-        font.family: button.fontFamily
-        font.pixelSize: Style.bar.iconFont
         renderType: Text.NativeRendering
         Behavior on color { ColorAnimation { duration: 160 } }
       }
