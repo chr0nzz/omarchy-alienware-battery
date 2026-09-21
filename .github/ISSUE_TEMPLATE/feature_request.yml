@@ -1,0 +1,23 @@
+name: Feature request
+description: Something the battery widget should do and does not
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing
+      description: The problem first, not the solution
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it might work
+      description: Where it belongs in the bar icon or the popup
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This belongs in the battery widget, not in the Alienware plugin
+          required: true

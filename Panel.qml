@@ -76,8 +76,6 @@ Panel {
 
   function applyInfo(text) {
     var next = Model.parseKeyValue(text)
-    // Keep the last good read: the script briefly returns nothing around an
-    // AC plug or unplug, and the stats should not blink out.
     if (Object.keys(next).length > 0) info = next
   }
 
@@ -197,7 +195,6 @@ Panel {
           }
         }
 
-
         Card {
           CardTitle {
             title: "CHARGE"
@@ -235,7 +232,6 @@ Panel {
             }
 
             Rectangle {
-              // Where the lowBattery warning starts, so the bar reads against it.
               visible: root.w !== null
               x: track.width * (root.w ? root.w.lowBattery : 15) / 100 - width / 2
               anchors.verticalCenter: track.verticalCenter

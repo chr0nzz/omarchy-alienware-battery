@@ -29,8 +29,6 @@ BarWidget {
   readonly property string glyph: Model.glyph(device, onBattery, states)
   readonly property string percentText: showPercentage ? Model.percentText(device) : ""
 
-  // Thermal profile, read from alienwarectl. Absent or stopped helper leaves
-  // profile.available false and the widget behaves as a plain battery icon.
   property var profile: Model.parseProfile("")
   property bool panelWantsFastPoll: false
   readonly property bool profilesUsable: showProfiles && profile.available

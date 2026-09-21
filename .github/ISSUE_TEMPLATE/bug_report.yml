@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in the battery widget does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Click the battery icon in the bar
+        2. Pick a thermal profile
+        3. The profile does not change
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: From manifest.json, or the commit you installed
+    validations:
+      required: true
+  - type: input
+    id: omarchy
+    attributes:
+      label: Omarchy version
+      placeholder: omarchy version
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Laptop model
+      placeholder: Alienware x15 R2
+  - type: textarea
+    id: battery
+    attributes:
+      label: Battery readout
+      description: Output of omarchy-battery-status --shell
+      render: shell
+  - type: textarea
+    id: profile
+    attributes:
+      label: Thermal profile readout
+      description: Output of alienwarectl status, if the helper is installed
+      render: shell

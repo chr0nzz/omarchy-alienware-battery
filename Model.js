@@ -55,8 +55,6 @@ function clampLow(value) {
   return Math.max(LOW_MIN, Math.min(LOW_MAX, n))
 }
 
-// A plain snapshot of UPower.displayDevice, so the logic below can be tested
-// without Quickshell and bindings only depend on the fields they read.
 function snapshot(device) {
   if (!device || device.isPresent !== true) return { isPresent: false }
   return {
@@ -81,8 +79,6 @@ function percentText(device) {
   return Math.round(fraction(d) * 100) + "%"
 }
 
-// Charging with the battery parked below full means a charge limit is holding
-// it there. UPower reports that a few different ways depending on the driver.
 function thresholdActive(device, onBattery, states) {
   var d = isObject(device) ? device : {}
   var s = isObject(states) ? states : {}
@@ -147,7 +143,6 @@ function formatRate(watts) {
   return (w >= 10 ? w.toFixed(0) : w.toFixed(1)) + " W"
 }
 
-// "Time left" on battery, "Time to full" while charging, nothing otherwise.
 function timeLine(device, onBattery, states) {
   var d = isObject(device) ? device : {}
   var p = phase(d, onBattery, states)
@@ -200,8 +195,6 @@ function profileGlyph(name) {
   return PROFILE_GLYPHS[String(name || "")] || "󰈐"
 }
 
-// `alienwarectl status` prints one JSON object. Only the thermal profile is
-// read here; anything unparseable means the helper is absent or down.
 function parseProfile(text) {
   var empty = { available: false, current: "", choices: [], writable: false, gmodeForced: false }
   var raw

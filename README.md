@@ -23,6 +23,14 @@ omarchy plugin add https://github.com/chr0nzz/omarchy-alienware-battery.git --en
 
 Then remove Omarchy's Power widget from the bar settings, and drag this one where it was.
 
+## Uninstall
+
+```
+omarchy plugin remove xyzlab.alienware-battery
+```
+
+Your settings stay in `~/.config/omarchy/shell.json` until you remove the widget from the bar.
+
 ## Use
 
 | | |
@@ -48,6 +56,10 @@ Through the Omarchy bar widget settings:
 ```lua
 o.bind("SUPER SHIFT", "B", "Battery", "omarchy-shell shell summon xyzlab.alienware-battery '{}'")
 ```
+
+## Preview
+
+![The battery popup while charging](preview.png)
 
 ## Development
 
