@@ -23,6 +23,14 @@ BarWidget {
   readonly property bool showPercentage: Model.boolOr(setting("showPercentage", false), false)
   readonly property int lowBattery: Model.clampLow(setting("lowBattery", Model.LOW_DEFAULT))
   readonly property bool showProfiles: Model.boolOr(setting("showProfiles", true), true)
+  readonly property int batteryHz: Model.clampHz(setting("batteryHz", 0))
+  readonly property int acHz: Model.clampHz(setting("acHz", 0))
+  readonly property bool lowPowerOnBattery: Model.boolOr(setting("lowPowerOnBattery", false), false)
+  readonly property bool notifyLow: Model.boolOr(setting("notifyLow", false), false)
+
+  property string profileBeforeBattery: ""
+  property bool lowArmed: true
+  property var refreshQueue: []
 
   readonly property string phase: Model.phase(device, onBattery, states)
   readonly property bool low: Model.isLow(device, onBattery, lowBattery)
@@ -68,6 +76,70 @@ BarWidget {
     id: setProc
     onExited: root.refreshProfile()
   }
+
+  Process {
+    id: monitorsProc
+    command: ["hyprctl", "-j", "monitors"]
+    stdout: StdioCollector { id: monitorsOut; waitForEnd: true }
+    onExited: root.applyRefreshPlan(Model.refreshPlan(Model.parseMonitors(monitorsOut.text), root.onBattery, root.batteryHz, root.acHz))
+  }
+
+  Process {
+    id: refreshProc
+    onExited: root.runNextRefresh()
+  }
+
+  Process { id: notifyProc }
+
+  Timer {
+    id: powerSettle
+    interval: 1500
+    repeat: false
+    onTriggered: root.applyPowerSource()
+  }
+
+  function applyPowerSource() {
+    if (batteryHz > 0 || acHz > 0) {
+      if (!monitorsProc.running) monitorsProc.running = true
+    }
+    applyLowPower()
+  }
+
+  function applyRefreshPlan(plan) {
+    refreshQueue = Model.toList(plan)
+    runNextRefresh()
+  }
+
+  function runNextRefresh() {
+    if (refreshProc.running || !refreshQueue.length) return
+    var next = refreshQueue[0]
+    refreshQueue = refreshQueue.slice(1)
+    if (!next || !Model.toList(next.argv).length) return
+    refreshProc.command = next.argv
+    refreshProc.running = true
+  }
+
+  function applyLowPower() {
+    if (!lowPowerOnBattery || !profile.available || !profile.writable) return
+    var plan = Model.lowPowerPlan(onBattery, lowPowerOnBattery, profile.current, profileBeforeBattery)
+    profileBeforeBattery = plan.remember
+    if (plan.profile) setProfile(plan.profile)
+  }
+
+  function checkLowWarning() {
+    if (notifyLow && Model.lowWarningDue(device, onBattery, lowBattery, lowArmed) && !notifyProc.running) {
+      notifyProc.command = Model.cmdLowWarning(device)
+      notifyProc.running = true
+    }
+    lowArmed = Model.lowWarningArmed(device, onBattery, lowBattery, lowArmed)
+  }
+
+  onOnBatteryChanged: {
+    powerSettle.restart()
+    checkLowWarning()
+  }
+
+  onDeviceChanged: checkLowWarning()
 
   Timer {
     interval: root.panelWantsFastPoll ? 3000 : 20000

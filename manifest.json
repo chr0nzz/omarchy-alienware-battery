@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "xyzlab.alienware-battery",
   "name": "Alienware Battery",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "xyzlab",
   "license": "MIT",
-  "description": "A battery indicator for the Omarchy bar without the power-profiles picker, so it does not fight Alienware thermal profiles. Shows charge, rate, time left, size and cycles, and switches thermal profiles through alienwarectl when it is installed.",
+  "description": "A battery indicator for the Omarchy bar without the power-profiles picker, so it does not fight Alienware thermal profiles. Shows charge, rate, time left, size and cycles, switches thermal profiles through alienwarectl, and can drop the panel refresh rate and the thermal profile when you unplug.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,14 +14,18 @@
   },
   "barWidget": {
     "displayName": "Alienware Battery",
-    "description": "Battery charge and time left, with Alienware thermal profiles instead of power profiles.",
+    "description": "Battery charge and time left, Alienware thermal profiles, and optional refresh rate and profile switching when the power source changes.",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
       "showPercentage": false,
       "lowBattery": 15,
-      "showProfiles": true
+      "showProfiles": true,
+      "batteryHz": 0,
+      "acHz": 0,
+      "lowPowerOnBattery": false,
+      "notifyLow": false
     },
     "schema": [
       {
@@ -44,6 +48,36 @@
         "type": "boolean",
         "label": "Show Alienware thermal profiles when alienwarectl is installed",
         "defaultValue": true
+      },
+      {
+        "key": "batteryHz",
+        "type": "integer",
+        "label": "Panel refresh rate on battery, 0 to leave it alone",
+        "min": 0,
+        "max": 360,
+        "step": 1,
+        "defaultValue": 0
+      },
+      {
+        "key": "acHz",
+        "type": "integer",
+        "label": "Panel refresh rate on mains, 0 to leave it alone",
+        "min": 0,
+        "max": 360,
+        "step": 1,
+        "defaultValue": 0
+      },
+      {
+        "key": "lowPowerOnBattery",
+        "type": "boolean",
+        "label": "Switch the thermal profile to low power on battery",
+        "defaultValue": false
+      },
+      {
+        "key": "notifyLow",
+        "type": "boolean",
+        "label": "Send the low battery notification, for when Omarchy's battery service is disabled",
+        "defaultValue": false
       }
     ]
   }

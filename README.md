@@ -12,6 +12,8 @@ profiles in its place when `alienwarectl` is installed.
 - Rate, time left or time to full, battery size, charge cycles and the charge limit when one holds
 - Thermal profile buttons, through `alienwarectl`, and hidden when it is not installed
 - Hides itself on a machine with no battery
+- Optionally drops the panel refresh rate on battery and puts it back on mains
+- Optionally switches the thermal profile to low power on battery
 
 It works without the Alienware plugin. You just don't get the thermal profiles.
 
@@ -50,6 +52,23 @@ Through the Omarchy bar widget settings:
 | `showPercentage` | `false` | Percentage beside the icon |
 | `lowBattery` | `15` | Charge, 5 to 50, that turns the icon urgent on battery |
 | `showProfiles` | `true` | Thermal profiles when `alienwarectl` is installed |
+| `batteryHz` | `0` | Panel refresh rate on battery. `0` leaves the rate alone |
+| `acHz` | `0` | Panel refresh rate on mains. `0` leaves the rate alone |
+| `lowPowerOnBattery` | `false` | Switch the thermal profile to low power on battery, and back to the previous one on mains |
+| `notifyLow` | `false` | Send the low battery notification through `omarchy-battery-low` |
+
+### Refresh rate
+
+Set `batteryHz` to 60 and `acHz` to 240 and the internal panel follows the power source. Only the
+internal panel is touched, only when the rate it needs is in its mode list, and only when it is not
+already there. External monitors are left alone. Omarchy has no hook for a power source change, so
+this widget does it, because it already watches the battery.
+
+### Low battery notification
+
+Omarchy ships a battery service that sends this warning. Leave `notifyLow` off unless you have
+disabled that service, or you will get the warning twice. It fires once per discharge, and re-arms
+when the charge climbs back above the threshold or you plug in.
 
 ## Keybind
 

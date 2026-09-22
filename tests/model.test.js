@@ -89,3 +89,56 @@ test("profile labels, glyphs and cycling", () => {
   assert.equal(Model.nextProfile([], "quiet", 1), "")
   assert.deepEqual(Model.cmdProfile("quiet"), ["alienwarectl", "profile", "quiet"])
 })
+
+const MONITORS = JSON.stringify([
+  { name: "eDP-2", width: 2560, height: 1440, refreshRate: 240.002, x: 0, y: 0, scale: 1.6, availableModes: ["2560x1440@240.00Hz", "2560x1440@60.00Hz"] },
+  { name: "HDMI-A-1", width: 1920, height: 1080, refreshRate: 60, x: 2560, y: 0, scale: 1, availableModes: ["1920x1080@60.00Hz"] }
+])
+
+test("refreshTarget picks the rate for the power source", () => {
+  assert.equal(Model.refreshTarget(true, 60, 240), 60)
+  assert.equal(Model.refreshTarget(false, 60, 240), 240)
+  assert.equal(Model.refreshTarget(true, 0, 240), 0)
+  assert.equal(Model.clampHz(10), 30)
+  assert.equal(Model.clampHz("x"), 0)
+})
+
+test("parseMonitors reads hyprctl output and finds the internal panel", () => {
+  const list = Model.parseMonitors(MONITORS)
+  assert.equal(list.length, 2)
+  assert.deepEqual(Model.internalMonitors(list).map(m => m.name), ["eDP-2"])
+  assert.deepEqual(Model.parseMonitors("not json"), [])
+  const external = Model.parseMonitors(JSON.stringify([{ name: "HDMI-A-1", width: 1920, height: 1080, availableModes: [] }]))
+  assert.deepEqual(Model.internalMonitors(external).map(m => m.name), ["HDMI-A-1"])
+})
+
+test("a plan only touches a panel that supports the rate and is not already there", () => {
+  const list = Model.parseMonitors(MONITORS)
+  const toBattery = Model.refreshPlan(list, true, 60, 240)
+  assert.equal(toBattery.length, 1)
+  assert.deepEqual(toBattery[0].argv, ["hyprctl", "eval", 'hl.monitor({ output = "eDP-2", mode = "2560x1440@60", position = "0x0", scale = 1.6 })'])
+  assert.deepEqual(Model.refreshPlan(list, false, 60, 240), [])
+  assert.deepEqual(Model.refreshPlan(list, true, 0, 0), [])
+  assert.deepEqual(Model.refreshPlan(list, true, 144, 240), [])
+})
+
+test("lowPowerPlan drops to low power on battery and restores what was there", () => {
+  assert.deepEqual(Model.lowPowerPlan(true, true, "balanced", ""), { profile: "low-power", remember: "balanced" })
+  assert.deepEqual(Model.lowPowerPlan(true, true, "low-power", "balanced"), { profile: "", remember: "balanced" })
+  assert.deepEqual(Model.lowPowerPlan(false, true, "low-power", "balanced"), { profile: "balanced", remember: "" })
+  assert.deepEqual(Model.lowPowerPlan(false, true, "quiet", ""), { profile: "", remember: "" })
+  assert.deepEqual(Model.lowPowerPlan(true, false, "balanced", ""), { profile: "", remember: "" })
+})
+
+test("the low warning fires once per discharge below the threshold", () => {
+  const low = { isPresent: true, percentage: 0.12, state: 2 }
+  const ok = { isPresent: true, percentage: 0.5, state: 2 }
+  assert.equal(Model.lowWarningDue(low, true, 15, true), true)
+  assert.equal(Model.lowWarningDue(low, true, 15, false), false)
+  assert.equal(Model.lowWarningDue(low, false, 15, true), false)
+  assert.equal(Model.lowWarningArmed(low, true, 15, true), false)
+  assert.equal(Model.lowWarningArmed(ok, true, 15, false), false)
+  assert.equal(Model.lowWarningArmed(ok, true, 15, true), true)
+  assert.equal(Model.lowWarningArmed(low, false, 15, false), true)
+  assert.deepEqual(Model.cmdLowWarning(low), ["omarchy-battery-low", "12"])
+})
