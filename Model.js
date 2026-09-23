@@ -316,9 +316,23 @@ function atRate(monitor, hz) {
   return !!want && isObject(monitor) && Math.abs(toNumber(monitor.refreshRate, 0) - want) < 1
 }
 
+function safeOutput(name) {
+  return typeof name === "string" && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(name)
+}
+
+function safeInt(value, min) {
+  return typeof value === "number" && isFinite(value) && Math.floor(value) === value && value >= min && value <= 100000
+}
+
+function safeScale(value) {
+  return typeof value === "number" && isFinite(value) && value > 0 && value <= 10
+}
+
 function monitorArgs(monitor, hz) {
   var want = clampHz(hz)
-  if (!want || !isObject(monitor) || !monitor.name) return []
+  if (!want || !isObject(monitor) || !safeOutput(monitor.name)) return []
+  if (!safeInt(monitor.width, 1) || !safeInt(monitor.height, 1)) return []
+  if (!safeInt(monitor.x, -100000) || !safeInt(monitor.y, -100000) || !safeScale(monitor.scale)) return []
   var lua = "hl.monitor({ output = \"" + monitor.name + "\", mode = \"" +
     monitor.width + "x" + monitor.height + "@" + want + "\", position = \"" +
     monitor.x + "x" + monitor.y + "\", scale = " + monitor.scale + " })"
@@ -333,7 +347,9 @@ function refreshPlan(monitors, onBattery, batteryHz, acHz) {
   for (var i = 0; i < list.length; i++) {
     var monitor = list[i]
     if (atRate(monitor, want) || !supportsRate(monitor, want)) continue
-    plan.push({ name: monitor.name, hz: want, argv: monitorArgs(monitor, want) })
+    var argv = monitorArgs(monitor, want)
+    if (!argv.length) continue
+    plan.push({ name: monitor.name, hz: want, argv: argv })
   }
   return plan
 }

@@ -122,6 +122,20 @@ test("a plan only touches a panel that supports the rate and is not already ther
   assert.deepEqual(Model.refreshPlan(list, true, 144, 240), [])
 })
 
+test("monitorArgs refuses names and values that could escape the Lua source", () => {
+  const panel = Model.parseMonitors(MONITORS)[0]
+  const hostile = ['eDP-1", scale = 1 }) os.execute("id") --', "eDP-1\\", "eDP 1", "eDP-1\n", "", "-eDP", "e".repeat(65)]
+  for (const name of hostile) {
+    assert.deepEqual(Model.monitorArgs(Object.assign({}, panel, { name }), 60), [])
+  }
+  assert.deepEqual(Model.monitorArgs(Object.assign({}, panel, { scale: Infinity }), 60), [])
+  assert.deepEqual(Model.monitorArgs(Object.assign({}, panel, { x: 1.5 }), 60), [])
+  assert.deepEqual(Model.monitorArgs(Object.assign({}, panel, { width: "2560" }), 60), [])
+  assert.deepEqual(Model.monitorArgs(Object.assign({}, panel, { name: "HEADLESS-2", x: -1920 }), 60), ["hyprctl", "eval", 'hl.monitor({ output = "HEADLESS-2", mode = "2560x1440@60", position = "-1920x0", scale = 1.6 })'])
+  const evil = JSON.stringify([{ name: 'eDP-1"})os.execute("id")--', width: 2560, height: 1440, refreshRate: 240, x: 0, y: 0, scale: 1, availableModes: ["2560x1440@60.00Hz"] }])
+  assert.deepEqual(Model.refreshPlan(Model.parseMonitors(evil), true, 60, 240), [])
+})
+
 test("lowPowerPlan drops to low power on battery and restores what was there", () => {
   assert.deepEqual(Model.lowPowerPlan(true, true, "balanced", ""), { profile: "low-power", remember: "balanced" })
   assert.deepEqual(Model.lowPowerPlan(true, true, "low-power", "balanced"), { profile: "", remember: "balanced" })
